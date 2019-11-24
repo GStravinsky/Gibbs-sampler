@@ -20,14 +20,14 @@ n <- 10
 g <- 1 # for simplicity
 XX <- t(X) %*% X  
 beta_hat <- solve(XX) %*% t(X) %*% y # MLE/OLS solution
-beta_mean <- c(0,0) # arbitrary choice of the hyperparameter
+beta0 <- c(0,0) # arbitrary choice of the hyperparameter
 resid_sigma <- (t(y-X %*% beta_hat) %*% (y-X %*% beta_hat))^2 # s^2
 shape_sigma <-  n/2
-scale_sigma <- resid_sigma/2 + 1/(2*(g+1)) %*% t(beta_mean-beta_hat) %*% XX %*% (beta_mean-beta_hat)
+scale_sigma <- resid_sigma/2 + 1/(2*(g+1)) %*% t(beta0-beta_hat) %*% XX %*% (beta0-beta_hat)
+
 
 ###### DEFINE THE MOMENTS OF BETA DISTRIBUTION #######
 beta_mean <- g/(g+1) * (beta_mean/g + beta_hat)
-beta_sd <- sqrt((sigma * g)/(g+1) * XX)
 
 set.seed(1620789)
 
@@ -38,7 +38,7 @@ gibbs <- function(T, m){
   result <- matrix(ncol = 3, nrow = T)
   for (i in 1: T) {
     sigma <- rinvgamma(1, shape = shape_sigma, scale = scale_sigma)
-    beta_sd <- sqrt((sigma * g)/(g+1) * XX)
+    beta_sd <- (sigma * g)/(g+1) * XX
     beta <- mvrnorm(1, beta_mean, beta_sd)
     result[i, ] <- c(beta[1], beta[2], sigma)
   }

@@ -4,7 +4,7 @@ data <- read.table("~/Desktop/data.txt", quote="\"", comment.char=a)
 summary(data) # V11 is the dependent variable
 y <- data$V11
 # standardize y, otherwise immense coefficients
-y_scale <- scale(y)
+#y_scale <- scale(y)
 n <- nrow(data)
 X <- data[,c(1:10)]
 X <- as.matrix(sapply(X, as.numeric))
@@ -12,9 +12,9 @@ X <- as.matrix(sapply(X, as.numeric))
 #### DEFINE THE CHARARCTERISTICS OF SIGMA DISTRIBUTION #####
 g <- 1 # for simplicity
 XX <- t(X) %*% X  
-beta_hat <- solve(XX) %*% t(X) %*% y_scale # MLE/OLS solution
+beta_hat <- solve(XX) %*% t(X) %*% y # MLE/OLS solution
 beta0 <- rep(0, 10) # arbitrary choice of the hyperparameter
-resid_sigma <- (t(y_scale-X %*% beta_hat) %*% (y_scale-X %*% beta_hat))^2 # s^2
+resid_sigma <- t(y-X %*% beta_hat) %*% (y-X %*% beta_hat) # s^2
 shape_sigma <-  n/2
 scale_sigma <- resid_sigma/2 + 1/(2*(g+1)) * t(beta0-beta_hat) %*% XX %*% (beta0-beta_hat)
 sigma <- rinvgamma(1, shape = shape_sigma, rate = scale_sigma)

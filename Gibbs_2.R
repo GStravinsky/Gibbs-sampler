@@ -20,32 +20,35 @@ n <- 10
 g <- 1 # for simplicity
 XX <- t(X) %*% X  
 beta_hat <- solve(XX) %*% t(X) %*% y # MLE/OLS solution
-beta0 <- c(0,0) # arbitrary choice of the hyperparameter
+beta0 <- rep(0, 2) # arbitrary choice of the hyperparameter
 resid_sigma <- (t(y-X %*% beta_hat) %*% (y-X %*% beta_hat))^2 # s^2
 shape_sigma <-  n/2
-scale_sigma <- resid_sigma/2 + 1/(2*(g+1)) %*% t(beta0-beta_hat) %*% XX %*% (beta0-beta_hat)
-
+scale_sigma <- resid_sigma/2 + 1/(2*(g+1)) * t(beta0-beta_hat) %*% XX %*% (beta0-beta_hat)
+sigma <- rinvgamma(1, shape = shape_sigma, rate = scale_sigma)
 
 ###### DEFINE THE MOMENTS OF BETA DISTRIBUTION #######
-beta_mean <- g/(g+1) * (beta_mean/g + beta_hat)
+beta_mean <- g/(g+1) * (beta0/g + beta_hat)
+beta_sd <- (sigma * g)/(g+1) * XX
 
 set.seed(1620789)
 
 ###### GIBBS SAMPLER #######
-gibbs <- function(T, m){
+gibbs <- function(T, b){
   # T - number of iterations
-  # m - number of initial iterations to be omitted from the final result - burnin
-  result <- matrix(ncol = 3, nrow = T)
+  # b - number of initial iterations to be omitted from the final result - burnin
+  result <- matrix(ncol = 2, nrow = T)
   for (i in 1: T) {
-    sigma <- rinvgamma(1, shape = shape_sigma, scale = scale_sigma)
-    beta_sd <- (sigma * g)/(g+1) * XX
+    sigma <- rinvgamma(1, shape = shape_sigma, rate = scale_sigma)
+    beta_sd <- (sigma * g)/(g+1) * solve(XX)
     beta <- mvrnorm(1, beta_mean, beta_sd)
     result[i, ] <- c(beta[1], beta[2], sigma)
   }
-  adjusted_result <- result[c(m:T),]
+  adjusted_result <- as.matrix(result[c(b:T),])
+  adjusted_result
 }
 
-test_output <- gibbs(1000)
+output <- gibbs(T=10000, b=200)
+output[c(9000:9050),]
 
 # performance plots
 par(mfrow=c(3,2))

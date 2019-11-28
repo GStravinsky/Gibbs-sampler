@@ -1,10 +1,19 @@
 load("/Users/MacBook_Retina_2015_256Gb/Documents/Statistics Warwick/ST952/Assignment_2/czechgold.Rdata")
 
 
-if(!require(glmnet)){
+if(require(glmnet)){
   install.packages("glmnet")
   library(glmnet)
 }
+
+if(require(PRROC)){
+  install.packages("PRROC")
+  library(PRROC)
+}
+
+
+install.packages("caret")
+library(caret)
 
 summary(czechgold)
 # gold to factor
@@ -27,10 +36,10 @@ pairs(age~., data=gold[,c(2:5)])
 # but only  cash withrawals and cash credits seem correlated and to some 
 # extent cash widtdrawals and credit withdrawals. 
 par(mfrow=c(2,2))
-hist(age)
-hist(mcardwdl)
-hist(mcashcr)
-hist(mcashwd)
+hist(age,40)
+hist(mcardwdl[mcardwdl!=0], 40)
+hist(mcashcr[mcashcr!=0], 40)
+hist(mcashwd[mcashcr!=0], 40)
 
 # WITHOUT ZEROS
 hist(age)
@@ -58,7 +67,12 @@ options(scipen = 999)
 options(digits=4)
 
 a <- glm(Gold~age*carduse+., family = binomial, data = gold)
+y.pred_A <- predict(a,type="response")
 summary(a)
+
+roc_A <- roc.curve(scores.class0 = y.pred_A, weights.class0 = y, curve=T)
+plot(roc_A)
+
 # age, carduseno, credit withdrawals, sex, interaction
 
 b_min1 <- glm(Gold~age*carduse+mcardwdl+mcashcr+mcashwd+second+sex+type, family = binomial, data = gold)
@@ -94,15 +108,26 @@ b_min54 <-  glm(Gold~age*carduse+mcardwdl+mcashwd, family = binomial, data = gol
 anova(b_min53, b_min4, test = "Chisq" )
 #0.028
 # stop with the model b_min4!
-summary(b_min4)
+
+y.pred_B <- predict(b_min4,type="response")
+
+roc_B <- roc.curve(scores.class0 = y.pred_B, weights.class0 = y, curve=T)
+plot(roc_B)
 
 ##### 2C
-step(a, direction = "both", test = "Chisq")
+different <- glm(Gold~age:carduse+., family = binomial, data = gold)
+step(different, direction = "backward", test = "Chisq")
 # - frequency, -mcashcr. - second. - type
 # leave mcardwdl, mcashwd, interaction, sex, age, carduse. AIC = 891
 # a bit different from a suggestion of simple individual significance
 a1 <- glm(Gold~age*carduse+ mcardwdl + mcashwd + sex, family = binomial, data = gold)
 summary(a1)
+
+stepwise <- step(different, direction = "backward", test = "Chisq")
+y.pred_C <- predict(stepwise,type="response")
+
+roc_C <- roc.curve(scores.class0 = y.pred_C, weights.class0 = y, curve=T)
+plot(roc_C)
 
 ####### 2D
 
@@ -113,8 +138,6 @@ x$sex <- ifelse(x$sex=="F", 1,0)
 x$carduse <- ifelse(x$carduse=="Yes", 1,0)
 x$type <- ifelse(x$type=="OWNER", 1,0)
 
-install.packages("caret")
-library(caret)
 frq <- dummyVars(~ frequency, data = x, levelsOnly = TRUE)
 frq_full <- predict(frq, x)
 x <- merge(x = x, y = frq_full, by.x = 0, by.y = 0)
@@ -138,6 +161,7 @@ coef(fit1,s=0)
 
 # I THINK THIS IS WEIRD BECAUSE OF ZEROS. 
 # Cross validation
+set.seed(2000)
 cvfit1 = cv.glmnet(x,y, family="binomial",alpha=1)
 # Plot this
 plot(cvfit1)
@@ -156,3 +180,24 @@ legend("top",legend=c("Minimum lambda", "1 standard error larger lambda"),lty=c(
 legend("topright",legend=c("Minimum lambda", "1 standard error larger lambda"),lty=c(1,1),col=c("blue","red"), ins=0.05)
 coef(cvfit1, s = "lambda.min")
 coef(cvfit1, s = "lambda.1se")
+
+y.pred_D <-predict(cvfit1, s="lambda.min", newx=x, type="response")
+
+roc_D <- roc.curve(scores.class0 = y.pred_D, weights.class0 = y, curve=T)
+plot(roc_D)
+
+
+###### Predictions
+
+betas <- coefficients(stepwise)
+betas <- as.matrix(betas)
+values <- c(1, 42, 500, 4000, 0, 1, 1)
+values <- as.matrix(values)
+
+logistic <- function(X, beta) {
+  p <- exp(X %*% beta)/(1+exp(X%*%beta))
+  p
+}
+
+logistic(X=t(values), beta = betas)
+# 1.3 %, so no

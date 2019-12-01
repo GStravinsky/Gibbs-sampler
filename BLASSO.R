@@ -7,7 +7,8 @@ library(invgamma)
 library(MASS)
 install.packages("statmod")
 library(statmod)
-
+install.packages("SuppDists")
+library(SuppDists)
 
 # HOME
 data <- read.table("~/Desktop/data.txt", quote="\"")
@@ -18,14 +19,13 @@ data <- read.table("//pedley.ads.warwick.ac.uk/user62/u/u1620789/Desktop/data.tx
 ###### PREPARE DATA #######
 
 summary(data) # V11 is the dependent variable
-y <- data$V11
+y <- scale(data$V11)
 X <- data[,c(1:10)]
 X <- as.matrix(sapply(X, as.numeric))
 p <- ncol(X)
 XX <- t(X) %*% X  
 
 set.seed(1620789)
-
 
 ###### GIBBS SAMPLER #######
 gibbs_blasso <- function(T, b=200, r, delta){
@@ -50,12 +50,12 @@ gibbs_blasso <- function(T, b=200, r, delta){
   for (i in 1: T) {
     
     # Define lambda^2 as a hyperprior
-    lambda2 <- rgamma(1, shape = p + r, rate = sum(diag(solve(D)))/2 + delta)
+    lambda2 <- rgamma(1, shape = p + r, rate = sum(diag(solve(D))/2) + delta)
     lambda  <- sqrt(lambda2)
     
     # Defining D
     for(t in 1:p){
-      D[t,t] <- rinvgauss(1, mean = sqrt((lambda^2 * sigma)/beta[t]^2), shape = lambda^2)
+      D[t,t] <- rinvGauss(1, nu = sqrt((lambda^2 * sigma)/beta[t]^2), lambda = lambda^2)
     }
     
     A <- XX + D
@@ -65,7 +65,7 @@ gibbs_blasso <- function(T, b=200, r, delta){
     beta <- mvrnorm(1, beta_mean, beta_var)
     
     # Defining sigma
-    resid_sigma <- t(y - X %*% beta) %*% (y - X %*% beta)
+    resid_sigma <- t((y - X %*% beta)) %*% (y - X %*% beta)
     scale_sigma <- resid_sigma/2 + (t(beta) %*% D %*% beta) / 2 
     sigma <- rinvgamma(1, shape = (n-1)/2 + p/2, scale = scale_sigma)
     
@@ -113,6 +113,6 @@ par(mfrow=c(2,2))
 hist(gaby$beta[,1],40)
 hist(gaby$beta[,2],40)
 hist(gaby$sigma,40)
-hist(gaby$D[,10],40)
+hist(gaby$D[,9],40)
 hist(gaby$lambda,40)
 par(mfrow=c(1,1))

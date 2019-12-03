@@ -5,9 +5,7 @@
 ## LOADING PACKAGES
 library(invgamma)
 library(MASS)
-install.packages("statmod")
 library(statmod)
-install.packages("SuppDists")
 library(SuppDists)
 
 # HOME
@@ -19,34 +17,34 @@ data <- read.table("//pedley.ads.warwick.ac.uk/user62/u/u1620789/Desktop/data.tx
 ###### PREPARE DATA #######
 
 summary(data) # V11 is the dependent variable
-y <- scale(data$V11)
+y <- data$V11
 X <- data[,c(1:10)]
 X <- as.matrix(sapply(X, as.numeric))
-p <- ncol(X)
-XX <- t(X) %*% X  
 
 set.seed(1620789)
 
 ###### GIBBS SAMPLER #######
-gibbs_blasso <- function(T, b=200, r, delta){
+gibbs_blasso <- function(T, b=200, X, y){
   # T - number of iterations
   # b - number of initial iterations to be omitted from the final result - burnin
-  # lambda - so far constant
-  # p - number of covariates
   
-  n <- nrow(X)
-  p <- ncol(X)
+  r <- 1 # shape parameter for lambda - as in Park and Casella
+  delta <- 1.78 # scale parameter for lambda as in Park and Casella
+  n <- nrow(X) # no of observations
+  p <- ncol(X) # no of covariates
   
-  # Initial arbitrary D and beta and sigma
-  D <- diag(10, p)
-  beta <- rep(10, p)
-  sigma <- 10
+  # Initial arbitrary D, beta and sigma
+  D <- diag(1, p)
+  beta <- rep(1, p)
+  sigma <- 1
+  XX <- t(X) %*% X  
   
   # Result storage
   beta_result <- matrix(ncol = p, nrow = T)
   sigma_result <- matrix(ncol = 1, nrow = T)
   D_result <- matrix(ncol = p, nrow = T)
   lambda_result <- matrix(ncol=1, nrow = T)
+  
   for (i in 1: T) {
     
     # Define lambda^2 as a hyperprior
@@ -89,7 +87,7 @@ gibbs_blasso <- function(T, b=200, r, delta){
   return(out)
 }
 
-gaby <- gibbs_blasso(T=5000, b=200, r = 1, delta = 1.78 )
+gaby <- gibbs_blasso(T=5000, b=200 )
 gaby$beta
 gaby$sigma
 gaby$D

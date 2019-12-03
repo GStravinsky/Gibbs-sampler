@@ -64,8 +64,8 @@ gibbs_blasso <- function(T, b=200, X, y){
     
     # Defining sigma
     resid_sigma <- t((y - X %*% beta)) %*% (y - X %*% beta)
-    scale_sigma <- resid_sigma/2 + (t(beta) %*% D %*% beta) / 2 
-    sigma <- rinvgamma(1, shape = (n-1)/2 + p/2, scale = scale_sigma)
+    rate_sigma <- resid_sigma/2 + (t(beta) %*% D %*% beta) / 2 
+    sigma <- rinvgamma(1, shape = (n-1)/2 + p/2, rate = rate_sigma)
     
     # Storing results
     beta_result[i,] <- c(beta)
@@ -87,7 +87,7 @@ gibbs_blasso <- function(T, b=200, X, y){
   return(out)
 }
 
-gaby <- gibbs_blasso(T=5000, b=200 )
+gaby <- gibbs_blasso(T=10000, b=200, X = X, y=y )
 gaby$beta
 gaby$sigma
 gaby$D
@@ -104,13 +104,14 @@ plot(gaby$D,type="l")
 plot(gaby$sigma, type="l")
 plot(gaby$lambda, type="l")
 plot(ts(gaby$beta[,1]))
-plot(ts(gaby$D[,9]))
+plot(ts(gaby$D[,8]))
 plot(ts(gaby$sigma))
 # the resulting distributions 
-par(mfrow=c(2,2))
-hist(gaby$beta[,1],40)
-hist(gaby$beta[,2],40)
-hist(gaby$sigma,40)
-hist(gaby$D[,9],40)
-hist(gaby$lambda,40)
+par(mfrow=c(2,3))
+hist(gaby$beta[,1],40, main = "Distribution of Beta1", xlab = NULL)
+hist(gaby$beta[,2],40, main = "Distribution of Beta2",  xlab = NULL)
+hist(gaby$sigma,40, main = "Distribution of sigma",  xlab = NULL)
+hist(gaby$D[,1][gaby$D[,1]<2],40, main = "Distribution of 1/tilda1^2",  xlab = NULL)
+hist(gaby$D[,2][gaby$D[,2]<2],40, main = "Distribution of 1/tilda2^2",  xlab = NULL)
+hist(gaby$lambda,40, main = "Distribution of lambda",  xlab = NULL)
 par(mfrow=c(1,1))

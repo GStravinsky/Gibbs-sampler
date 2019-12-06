@@ -1,18 +1,10 @@
 #######################
 # BLASSO GIBS SAMPLER #
 #######################
-
-## LOADING PACKAGES
 library(invgamma)
 library(MASS)
 library(statmod)
 library(SuppDists)
-
-# HOME
-data <- read.table("~/Desktop/data.txt", quote="\"")
-# UNI
-data <- read.table("//pedley.ads.warwick.ac.uk/user62/u/u1620789/Desktop/data.txt", quote="\"", comment.char="")
-
 
 ###### PREPARE DATA #######
 
@@ -64,6 +56,7 @@ gibbs_blasso <- function(T, b=200, X, y){
     
     # Defining sigma
     resid_sigma <- t((y - X %*% beta)) %*% (y - X %*% beta)
+    # invgamma package defines rate as scale -- see the documentation
     rate_sigma <- resid_sigma/2 + (t(beta) %*% D %*% beta) / 2 
     sigma <- rinvgamma(1, shape = (n-1)/2 + p/2, rate = rate_sigma)
     
@@ -86,6 +79,7 @@ gibbs_blasso <- function(T, b=200, X, y){
   
   return(out)
 }
+
 
 gaby <- gibbs_blasso(T=10000, b=200, X = X, y=y )
 gaby$beta

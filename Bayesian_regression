@@ -1,33 +1,11 @@
-data <- read.table("~/Desktop/data.txt", quote="\"")
 
-
-if(!require(invgamma)){
-  install.packages("invgamma")
-  library(invgamma)
-}
-
-if(!require(MASS)){
-  install.packages("MASS")
-  library(MASS)
-}
-
-# PREPARE DATA #
-summary(data) # V11 is the dependent variable
-y <- data$V11
-n <- nrow(data)
-X <- data[,c(1:10)]
-X <- as.matrix(sapply(X, as.numeric))
-
-
-set.seed(1620789)
-
-###### GIBBS SAMPLER #######
 gibbs <- function(T, b, X, y){
   # T - number of iterations
-  # b - number of initial iterations to be omitted from the final result - burnin
-  # X - covariates in matrix form
-  # y - response
-  g <- 1
+  # b - no. of initial iterations to be omitted from the result - burnin
+  # X - covariates in a matrix form
+  # y - response vector
+  
+  g <- 1 # for simplicity
   p <- ncol(X)
   
   beta0 <- rep(0, 10) # arbitrary choice of the hyperparameter
@@ -38,8 +16,11 @@ gibbs <- function(T, b, X, y){
   # result matrix
   result <- matrix(ncol = 11, nrow = T)
   for (i in 1: T) {
+  
     # Defining sigma distribution
-    rate_sigma <- 1/2 * t(y-X %*% beta) %*% (y-X %*% beta) + 1/(2 * g) *  t(beta -  beta0)  %*% XX %*% (beta-beta0)
+    # invgamma package defines rate as scale -- see the documentation
+    rate_sigma <- 1/2 * t(y-X %*% beta) %*% (y-X %*% beta) + 1/(2 * g) 
+                *  t(beta -  beta0)  %*% XX %*% (beta-beta0)
     shape_sigma <-  (n+p)/2
     sigma <- rinvgamma(1, shape = shape_sigma, rate = rate_sigma)
     
